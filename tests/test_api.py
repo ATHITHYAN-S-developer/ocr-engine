@@ -31,10 +31,14 @@ def setup_database():
     # Create tables
     Base.metadata.create_all(bind=engine)
     yield
+    # Dispose connection pool so SQLite releases file lock
+    engine.dispose()
     # Drop tables & delete DB file
-    Base.metadata.drop_all(bind=engine)
     if os.path.exists(TEST_DB_FILE):
-        os.remove(TEST_DB_FILE)
+        try:
+            os.remove(TEST_DB_FILE)
+        except PermissionError:
+            pass
 
 def test_health_endpoint():
     response = client.get("/api/v1/health")

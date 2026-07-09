@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Float, BigInteger
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Float, BigInteger, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -87,7 +87,7 @@ class OCRJobDB(Base):
     progress = Column(Float, default=0.0, nullable=False)
     current_stage = Column(String(100), default="PENDING", nullable=False)
     error_message = Column(String, nullable=True)
-    engine_config = Column(JSONB, nullable=False)
+    engine_config = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -103,7 +103,7 @@ class OCRResultDB(Base):
     job_id = Column(UUID(as_uuid=True), ForeignKey("ocr_jobs.id", ondelete="CASCADE"), unique=True, nullable=False)
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     raw_text = Column(String, nullable=False)
-    structured_json = Column(JSONB, nullable=False)
+    structured_json = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
     confidence = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -130,7 +130,7 @@ class AuditLogDB(Base):
     resource_id = Column(String(255), nullable=False)
     ip_address = Column(String(45), nullable=False)
     user_agent = Column(String(512), nullable=False)
-    details = Column(JSONB, nullable=False)
+    details = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("UserDB", back_populates="audit_logs")

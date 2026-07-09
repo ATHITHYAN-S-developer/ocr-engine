@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.sql import text
 from datetime import datetime
 import redis
@@ -32,12 +33,12 @@ def health_check(db = Depends(get_db)):
     if "unhealthy" in db_status or "unhealthy" in redis_status:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={
+            detail=jsonable_encoder({
                 "status": "unhealthy",
                 "database": db_status,
                 "redis": redis_status,
                 "timestamp": datetime.utcnow()
-            }
+            })
         )
 
     return HealthResponse(

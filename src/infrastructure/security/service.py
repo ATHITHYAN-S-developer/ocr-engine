@@ -1,20 +1,23 @@
 import jwt
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
-from passlib.context import CryptContext
 from src.application.interfaces.security_interfaces import IPasswordHasher, ITokenService
 from src.config import settings
 from src.domain.exceptions import UnauthorizedException
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 class BCryptPasswordHasher(IPasswordHasher):
     def hash_password(self, password: str) -> str:
-        return pwd_context.hash(password)
+        password_bytes = password.encode("utf-8")
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode("utf-8")
 
     def verify_password(self, password: str, hashed_password: str) -> bool:
         try:
-            return pwd_context.verify(password, hashed_password)
+            password_bytes = password.encode("utf-8")
+            hashed_bytes = hashed_password.encode("utf-8")
+            return bcrypt.checkpw(password_bytes, hashed_bytes)
         except Exception:
             return False
 
