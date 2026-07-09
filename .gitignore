@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.db
+uploads/
+temp_chunks/
+.env
+.ipynb_checkpoints/
