@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from src.config import settings
 from src.presentation.api.v1.router import api_router
 from src.domain.exceptions import DomainException, EntityNotFoundException, UnauthorizedException, InvalidCredentialsException
@@ -26,6 +27,9 @@ app.add_middleware(
 
 # Include v1 Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Mount frontend static portal
+app.mount("/portal", StaticFiles(directory="src/presentation/static", html=True), name="portal")
 
 # Initialize database tables on startup (Development/Fallback mode)
 @app.on_event("startup")

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise OCR-as-a-Service Portal</title>
+    <meta name="description" content="Commercial-grade standalone OCR Engine portal interface.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Panel -->
+        <aside class="sidebar-panel">
+            <div class="sidebar-header">
+                <h2>OCR ENGINE</h2>
+                <span class="badge badge-accent">v1.0.0</span>
+            </div>
+
+            <!-- Health Status -->
+            <div class="health-widget">
+                <div class="health-title">System Status</div>
+                <div class="health-items">
+                    <div class="health-item">
+                        <span>Database:</span>
+                        <span id="health-db" class="status-dot dot-gray"></span>
+                    </div>
+                    <div class="health-item">
+                        <span>Celery Queue:</span>
+                        <span id="health-redis" class="status-dot dot-gray"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auth Console -->
+            <div class="panel-section" id="auth-section">
+                <h3>Authentication</h3>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="auth-email">Email</label>
+                        <input type="email" id="auth-email" required placeholder="name@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="auth-password">Password</label>
+                        <input type="password" id="auth-password" required placeholder="••••••••">
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" id="btn-login" class="btn btn-primary">Login</button>
+                        <button type="button" id="btn-register" class="btn btn-secondary">Register</button>
+                    </div>
+                </form>
+                <div id="auth-user-info" class="hidden">
+                    <p>Logged in as: <strong id="logged-user-email">...</strong></p>
+                    <button type="button" id="btn-logout" class="btn btn-danger btn-sm">Sign Out</button>
+                </div>
+            </div>
+
+            <!-- Projects Selector & API Keys -->
+            <div class="panel-section hidden" id="project-section">
+                <h3>Project Developer Console</h3>
+                <div class="form-group">
+                    <label for="project-selector">Active Project</label>
+                    <select id="project-selector">
+                        <option value="">-- Select Project --</option>
+                    </select>
+                </div>
+                <button type="button" id="btn-create-project" class="btn btn-secondary btn-sm">+ Create Project</button>
+
+                <!-- API Key Manager -->
+                <div class="api-key-manager">
+                    <h4>Programmatic API Keys</h4>
+                    <button type="button" id="btn-gen-key" class="btn btn-secondary btn-sm">Generate Key</button>
+                    <div id="api-keys-list" class="keys-container"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Panel -->
+        <main class="workspace-panel">
+            <!-- Top Dashboard Header -->
+            <header class="workspace-header">
+                <div class="header-info">
+                    <h1>Developer Console</h1>
+                    <p>Manage documents, trigger pipeline jobs, and inspect structured outputs.</p>
+                </div>
+            </header>
+
+            <!-- Main Scrollable Dashboard Content -->
+            <div class="workspace-content">
+                <!-- Row 1: Upload and Jobs -->
+                <div class="workspace-grid-row">
+                    <!-- Document Upload Panel -->
+                    <section class="card upload-card">
+                        <h3>1. Upload Documents</h3>
+                        <div class="drag-drop-area" id="drag-drop-zone">
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p>Drag and drop files here, or <span class="browse-link">browse</span></p>
+                            <span class="supported-types">PDF, DOCX, PNG, JPEG, TIFF, BMP, WEBP (Max 100MB)</span>
+                            <input type="file" id="file-input" class="hidden" multiple>
+                        </div>
+                        <div id="upload-progress-list" class="progress-container"></div>
+                    </section>
+
+                    <!-- Jobs Tracker Panel -->
+                    <section class="card jobs-card">
+                        <h3>2. Active Pipeline Jobs</h3>
+                        <div class="jobs-table-container">
+                            <table class="data-table" id="jobs-table">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Stage</th>
+                                        <th>Progress</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="jobs-list">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-gray">No documents uploaded.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Row 2: Workspace Viewer (Split Screen) -->
+                <div class="workspace-grid-row viewer-row hidden" id="workspace-viewer">
+                    <!-- Left: Document Preview Canvas -->
+                    <section class="card canvas-card">
+                        <div class="card-header-actions">
+                            <h3>Document Page Layout Viewer</h3>
+                            <div class="page-controls">
+                                <button id="btn-prev-page" class="btn btn-circle" disabled>&lt;</button>
+                                <span id="page-num-indicator">Page 1 of 1</span>
+                                <button id="btn-next-page" class="btn btn-circle" disabled>&gt;</button>
+                            </div>
+                        </div>
+                        <div class="canvas-viewport" id="canvas-container">
+                            <canvas id="document-canvas"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Right: Results Tab Viewer -->
+                    <section class="card results-card">
+                        <div class="card-header-actions">
+                            <h3>Structured Outputs</h3>
+                            <!-- Download Exporter Buttons -->
+                            <div class="exporter-group" id="download-exporters">
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="TXT">TXT</button>
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="JSON">JSON</button>
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="MD">MD</button>
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="CSV">CSV</button>
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="XML">XML</button>
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="DOCX">DOCX</button>
+                                <button class="btn btn-secondary btn-sm btn-export" data-format="PDF">PDF</button>
+                            </div>
+                        </div>
+
+                        <!-- Tab Header -->
+                        <div class="tabs-header">
+                            <button class="tab-btn active" data-tab="tab-raw">Raw Text</button>
+                            <button class="tab-btn" data-tab="tab-tables">Tables</button>
+                            <button class="tab-btn" data-tab="tab-entities">Entities</button>
+                            <button class="tab-btn" data-tab="tab-json">Structured JSON</button>
+                        </div>
+
+                        <!-- Tab Body -->
+                        <div class="tabs-body">
+                            <!-- Tab Raw Text -->
+                            <div class="tab-content active" id="tab-raw">
+                                <pre id="result-raw-text" class="raw-text-view">Click a completed job to view outputs.</pre>
+                            </div>
+
+                            <!-- Tab Tables -->
+                            <div class="tab-content" id="tab-tables">
+                                <div id="result-tables" class="tables-view">
+                                    <p class="text-gray">No tables detected.</p>
+                                </div>
+                            </div>
+
+                            <!-- Tab Entities -->
+                            <div class="tab-content" id="tab-entities">
+                                <div id="result-entities" class="entities-view">
+                                    <p class="text-gray">No entities extracted.</p>
+                                </div>
+                            </div>
+
+                            <!-- Tab JSON -->
+                            <div class="tab-content" id="tab-json">
+                                <pre id="result-json" class="json-view">{}</pre>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Project Modal -->
+    <div id="project-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Create New Project</h3>
+            <form id="create-project-form">
+                <div class="form-group">
+                    <label for="new-proj-name">Project Name</label>
+                    <input type="text" id="new-proj-name" required placeholder="e.g. Invoices Management">
+                </div>
+                <div class="form-group">
+                    <label for="new-proj-desc">Description</label>
+                    <input type="text" id="new-proj-desc" placeholder="e.g. Parsing invoices schemas">
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="button" id="btn-cancel-project" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
