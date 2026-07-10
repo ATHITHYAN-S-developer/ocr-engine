@@ -25,8 +25,17 @@ def health_check(db = Depends(get_db)):
         
     # 2. Redis Check
     try:
-        r = redis.Redis.from_url(settings.CELERY_BROKER_URL, socket_timeout=1)
-        r.ping()
+        from src.infrastructure.queue.celery_app import celery_app
+        if celery_app.conf.task_always_eager:
+            redis_status = "healthy (eager mode)"
+        else:
+            # Check host fallback
+            import os
+            r_host = settings.REDIS_HOST
+            if settings.REDIS_HOST == "redis" and not os.path.exists("/.dockerenv"):
+                r_host = "localhost"
+            r = redis.Redis(host=r_host, port=settings.REDIS_PORT, socket_timeout=1)
+            r.ping()
     except Exception as e:
         redis_status = f"unhealthy: {str(e)}"
 
